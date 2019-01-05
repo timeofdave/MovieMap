@@ -3,6 +3,28 @@
 @{
     ViewData["Title"] = "About";
 }
+<script src="~/js/map.js" asp-append-version="true"></script>
+
+<p>Use this area to provide additional information.</p>
+
+<div style="position: relative;">
+    <canvas id="mapCanvas" width="1140" height="500" style="position: absolute; left: 0; top: 0; z-index: 0;"></canvas>
+    <canvas id="infoCanvas" width="240" height="500" style="position: absolute; right: 0; top: 0; z-index: 1;"></canvas>
+    <input id="inputTitle" width="240" height="100" type="text" style="z-index: 1; position: absolute;" />
+    <input id="inputYear" type="text" style="z-index: 1; position: absolute; left: 30px; top: 30px; width:200px; height:100px;" />
+</div>
+
+<canvas id="mapCanvas3" width="1140" height="500"></canvas>
+
+<div id="viewport">
+    <canvas id="canvas1"></canvas>
+    <canvas id="canvas2"></canvas>
+    <canvas id="canvas3" width="250px" height="250px"></canvas>
+</div>
+
+<div id="dvItems" style="font-size:24px;">
+</div>
+
 <h2>@ViewData["Title"]</h2>
 <h3>@Model.Message</h3>
 
