@@ -9,10 +9,12 @@ function Bubble(title) {
     this.movieId = 0;
     this.title = title;
     this.year = 0;
-    this.tomato = 0;
+    this.tomato = -1;
     this.popularity = 0;
     this.plot = "";
     this.color = colorBrown;
+    this.maturity = null;
+    this.poster = new Image();
     this.ring = 0;
     this.position = 0;
     this.mx = 0.0;
@@ -79,6 +81,7 @@ var sqrt3 = 0.0;
 var crowdingFactor = .65;
 var lineSpacing = 1.2;
 var fullPopularityVotes = 750000;
+var homeStuff = "Filtering Settings <\n" + "Maturity Settings <\n" + "Account Settings <\n";
 
 // Objects
 var bubbles = [];
@@ -87,6 +90,7 @@ var links = [];
 // State
 var currentBubble = null;
 var pinInfo = false;
+var opinionMode = false;
 var currentUnfilledRing = 0;
 var currentPositionInRing = 0;
 
@@ -108,8 +112,13 @@ var colorRed = "#a46666";
 var colorBrown = "#a39466";
 var colorCharcoal = "#3f3f3f";
 var colorSmoke = "#d8d8d8";
-var colorTranslucent = 'rgba(110, 110, 110, 0.8)';
+var colorGreyGlass = 'rgba(110, 110, 110, 0.8)';
 var colorWhite = "#ffffff";
+var colorSilver = "#888888";
+var colorLead = "#636363";//"#8f8f8f";
+var colorBlack = "#000000";
+var colorCoal = "#222222";
+var colorBlackGlass = 'rgba(40, 40, 40, 0.7)';
 
 
 window.onload = function () {
@@ -187,10 +196,10 @@ function setupSearch() {
     inputYear.style.left = (canvas.width - (titleWidth + yearWidth + fieldMargins)) / 2 + titleWidth + fieldMargins + "px";
     inputYear.style.top = fieldMargins + "px";
 
-    inputTitle.style.backgroundColor = colorTranslucent;
+    inputTitle.style.backgroundColor = colorGreyGlass;
     inputTitle.style.color = colorWhite;
     inputTitle.style.borderWidth = "0px";
-    inputYear.style.backgroundColor = colorTranslucent;
+    inputYear.style.backgroundColor = colorGreyGlass;
     inputYear.style.color = colorWhite;
     inputYear.style.borderWidth = "0px";
 
@@ -208,8 +217,9 @@ function setup() {
 
     // Place home
     var home = new Bubble('Home');
-    home.year = -1;
+    home.year = -5;
     home.popularity = 100;
+    home.tomato = 100;
     home.pinToMap();
     bubbles.push(home);
 
@@ -220,8 +230,7 @@ function setup() {
     sample1.popularity = 100;
     sample1.plot = "Plot of the movie. This could go on and on, but honestly why bother?";
     sample1.color = colorRed;
-    sample1.mx = sqrt3;
-    sample1.my = 1;
+    sample1.tomato = 85;
     sample1.pinToMap();
     bubbles.push(sample1);
 
@@ -230,8 +239,7 @@ function setup() {
     sample2.popularity = 80;
     sample2.plot = "Plot of the movie. This could go on and on, but honestly why bother?";
     sample2.color = colorBlue;
-    sample2.mx = sqrt3;
-    sample2.my = -1;
+    sample2.tomato = 93;
     sample2.pinToMap();
     bubbles.push(sample2);
 
@@ -283,67 +291,168 @@ function render() {
 
     // Render bubbles
     bubbles.forEach(b => {
-        // The circle
-        ctx.beginPath();
-        ctx.fillStyle = b.color;
-        ctx.arc(b.cx(), b.cy(), b.cSize(), 0, 2 * Math.PI, false);
-        ctx.fill();
+        
+        
 
-        // Title
-        var fontSize = b.cSize() / 5;
-        ctx.fillStyle = "#ffffff";
-        ctx.textAlign = "center";
-        ctx.font = fontSize + "px Calibri";
-        if (b.year == -1) {
-            ctx.fillText(b.title, b.cx(), b.cy());
+        // The circle
+        //ctx.beginPath();
+        //ctx.fillStyle = b.color;
+        //ctx.arc(b.cx(), b.cy(), b.cSize(), 0, 2 * Math.PI, false);
+        //ctx.fill();
+
+        if (b === currentBubble && opinionMode) {
+
+            // The circle with Pieness
+            var sizes = [90, 90, 90, 90];
+            var colors = [colorRed, colorPurple, colorBlue, colorGreen];
+            var labels = null;
+            drawPie(ctx, sizes, colors, labels, b.cx(), b.cy(), b.cSize());
+        }
+        else if (b === currentBubble) {
+            // The outline if currently selected
+            //ctx.beginPath();
+            //ctx.lineWidth = 1.5;
+            //ctx.strokeStyle = colorSmoke;
+            //ctx.arc(b.cx(), b.cy(), b.cSize() + 0.75, 0, 2 * Math.PI, false);
+            //ctx.stroke();
+
+            // The circle with image background
+            if (b.poster.src != null && b.poster.src != "") {
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(b.cx(), b.cy(), b.cSize(), 0, 2 * Math.PI, false);
+                ctx.clip();
+                var ratio = b.poster.naturalHeight / b.poster.naturalWidth;
+                ctx.drawImage(b.poster, b.cx() - b.cSize(), b.cy() - b.cSize() * 0.8 * ratio, b.cSize() * 2, b.cSize() * 2 * ratio);
+                ctx.fillStyle = colorBlackGlass;
+                ctx.arc(b.cx(), b.cy(), b.cSize() * 1.1, 0, 2 * Math.PI, false); // Imprecise size, for tinting.
+                ctx.fill();
+                ctx.restore();
+            }
+            else {
+                // The circle, no poster available
+                ctx.beginPath();
+                ctx.fillStyle = colorCoal;
+                ctx.arc(b.cx(), b.cy(), b.cSize(), 0, 2 * Math.PI, false);
+                ctx.fill();
+            }
+
+            if (b.year == -5) {
+                // this is the home bubble
+            }
+            else {
+                // Tomato and Maturity
+                var fontSize = b.cSize() / 3.5;
+                ctx.fillStyle = colorWhite;
+                ctx.textAlign = "center";
+                ctx.font = fontSize + "px Calibri";
+                if (b.tomato != null && b.tomato != -1 && b.tomato != "" && b.tomato != NaN) {
+                    ctx.fillText(b.tomato + "%", b.cx(), b.cy() - b.cSize() * 0.6);
+                }
+                if (b.maturity != null && b.maturity != "") {
+                    ctx.fillText(b.maturity, b.cx(), b.cy() + b.cSize() * 0.8);
+                }
+            }
+            
         }
         else {
-            wrapText(ctx, b.fullTitle(), b.cx(), b.cy(), b.cSize() * 1.8, fontSize * lineSpacing);
-        }
-    });
+            // The circle with Pie shape
+            var sizes;
+            if (b.tomato == -1 || b.tomato == NaN || b.tomato == "" || b.tomato == null) {
+                sizes = [360, 0];
+            }
+            else {
+                sizes = [b.tomato * 3.6, (100 - b.tomato) * 3.6];
+            }
+            var colors = [b.color, colorLead];
+            var labels = null;
+            drawPie(ctx, sizes, colors, labels, b.cx(), b.cy(), b.cSize());
 
+            // Title
+            var fontSize = b.cSize() / 5;
+            ctx.fillStyle = colorWhite;
+            ctx.textAlign = "center";
+            ctx.font = fontSize + "px Calibri";
+            if (b.year == -5) {
+                ctx.fillText(b.title, b.cx(), b.cy());
+            }
+            else {
+                wrapText(ctx, b.fullTitle(), b.cx(), b.cy(), b.cSize() * 1.8, fontSize * lineSpacing);
+            }
+        }
+
+        
+        
+    });
     
     renderInfo();
 }
 
 function renderInfo() {
     //ctxInfo.clearRect(canvasInfo.offsetLeft, 0, canvasInfo.width, canvasInfo.height);
-
     
     if (currentBubble !== null) {
         canvasInfo.width = 240;
 
         // Render background
         ctx.beginPath();
-        ctxInfo.fillStyle = colorTranslucent;
+        ctxInfo.fillStyle = colorGreyGlass;
         ctxInfo.fillRect(canvasInfo.offsetLeft, 0, canvasInfo.width, canvasInfo.height);
         ctxInfo.fill();
 
         var centerLineX = canvasInfo.offsetLeft + (canvasInfo.width / 2);
         var marginLineX = canvasInfo.offsetLeft + (canvasInfo.width / 20);
         
-        var b = bubbles[currentBubble];
+        var b = currentBubble;
 
         var fontSize = 20;
         ctxInfo.font = fontSize + "px Calibri";
         ctxInfo.textAlign = "center";
 
-        if (b.year == -1) {
+        if (b.year == -5) {
             // This is the home bubble
-            
-        }
-        else {
-            // Render title
-            //ctxInfo.beginPath();
+
+            // Render nickname
             ctxInfo.fillStyle = "#ffffff";
             ctxInfo.textAlign = "center";
-            wrapText(ctxInfo, b.fullTitle(), centerLineX, 200, canvasInfo.width * 0.9, fontSize * lineSpacing);
+            wrapText(ctxInfo, "MovieNightLover", centerLineX, 60, canvasInfo.width * 0.9, fontSize * lineSpacing);
+
+            // Render email
+            fontSize = 16;
+            ctxInfo.font = fontSize + "px Calibri";
+            ctxInfo.fillStyle = "#ffffff";
+            ctxInfo.textAlign = "center";
+            wrapText(ctxInfo, "movie@nights.com", centerLineX, 100, canvasInfo.width * 0.9, fontSize * lineSpacing);
+
+            // Render fake stuff
+            fontSize = 12;
+            ctxInfo.font = fontSize + "px Calibri";
+            ctxInfo.textAlign = "left";
+            wrapText(ctxInfo, homeStuff, marginLineX, 160, canvasInfo.width * 0.9, fontSize * lineSpacing);
+        }
+        else {
+            var heightUsed = 20;
+            var margins = 20;
+            // Render Poster
+            if (b.poster.src != null && b.poster.src != "") {
+                var ratio = b.poster.naturalHeight / b.poster.naturalWidth;
+                var posterWidth = canvasInfo.width - margins * 2;
+                ctx.drawImage(b.poster, canvasInfo.offsetLeft + margins, heightUsed, posterWidth, posterWidth * ratio);
+                heightUsed += posterWidth * ratio + margins;
+            }
+
+            // Render title
+            ctxInfo.fillStyle = "#ffffff";
+            ctxInfo.textAlign = "center";
+            var lines = wrapText(ctxInfo, b.fullTitle(), centerLineX, heightUsed + fontSize, canvasInfo.width * 0.9, fontSize * lineSpacing);
+            heightUsed += (lines * fontSize * lineSpacing) + margins;
 
             // Render plot
             fontSize = 12;
             ctxInfo.font = fontSize + "px Calibri";
             ctxInfo.textAlign = "left";
-            wrapText(ctxInfo, b.plot, marginLineX, 250, canvasInfo.width * 0.9, fontSize * lineSpacing);
+            lines = wrapText(ctxInfo, b.plot, marginLineX, heightUsed + fontSize, canvasInfo.width * 0.9, fontSize * lineSpacing);
+            heightUsed += (lines * fontSize * lineSpacing) + margins;
         }
         
     }
@@ -401,8 +510,11 @@ function zoomCamera(xLoc, yLoc, wheelDeltaY) {
     var originalZoom = cameraZoom;
     var direction = (wheelDeltaY / 180);
     cameraZoom += cameraZoom * cameraZoomSpeed * direction;
-    if (cameraZoom < 1) {
-        cameraZoom = 1;
+    if (cameraZoom < 5) {
+        cameraZoom = 5;
+    }
+    else if (cameraZoom > canvas.height) {
+        cameraZoom = canvas.height;
     }
 
     // Find cursor location on map.
@@ -430,8 +542,9 @@ function zoomCamera(xLoc, yLoc, wheelDeltaY) {
 function wrapText(context, text, x, y, maxWidth, lineHeight) {
     var words = text.split(' ');
     var line = '';
+    var numLines = 1;
 
-    for (var n = 0; n < words.length; n++) {
+    for (n = 0; n < words.length; n++) {
         var testLine = line + words[n] + ' ';
         var metrics = context.measureText(testLine);
         var testWidth = metrics.width;
@@ -439,12 +552,15 @@ function wrapText(context, text, x, y, maxWidth, lineHeight) {
             context.fillText(line, x, y);
             line = words[n] + ' ';
             y += lineHeight;
+            numLines++;
         }
         else {
             line = testLine;
         }
     }
     context.fillText(line, x, y);
+
+    return numLines;
 }
 
 
@@ -475,17 +591,23 @@ function mouseUp(evt) {
         var bubbleCY = b.cy();
         var bubbleCSize = b.cSize();
         
-        // Make the info panel open or close.
         if (Math.hypot(bubbleCX - xLoc, bubbleCY - yLoc) < bubbleCSize) {
-            currentBubble = i;
+
+            if (pinInfo == true) {
+                opinionMode = true;
+            }
+            // Make the info panel open or close, etc.
+            currentBubble = b;
             found = true;
             pinInfo = true;
+            
         }
     }
 
     if (!found && evt.target !== canvasInfo) {
         pinInfo = false;
         currentBubble = null;
+        opinionMode = false;
     }
     
     render();
@@ -504,12 +626,15 @@ function mouseMove(evt) {
         var bubbleCY = b.cy();
         var bubbleCSize = b.cSize();
         
-        // Make the info panel open or close.
+        // Make the info panel open or close, etc.
         if (Math.hypot(bubbleCX - xLoc, bubbleCY - yLoc) < bubbleCSize) {
             found = true;
 
             if (!pinInfo) {
-                currentBubble = i;
+                currentBubble = b;
+            }
+            if (!opinionMode) {
+                
             }
         }
     }
@@ -559,8 +684,8 @@ function keyPressYear(evt) {
 }
 
 // Unused
-function setCurrentBubble(bIndex) {
-    currentBubble = bIndex;
+function setCurrentBubble(b) {
+    currentBubble = b;
 }
 
 function submitSearch() {
@@ -580,10 +705,13 @@ function searchReturned(movie) {
         inputTitle.focus();
     }
     else {
-        addBubble(movie);
+        inputTitle.value = "";
+        inputYear.value = "";
 
-        currentBubble = bubbles.length - 1;
-        pinInfo = true;
+        var b = addBubble(movie);
+
+        //currentBubble = b;
+        //pinInfo = true;
 
         render();
     }
@@ -596,12 +724,20 @@ function addBubble(movie) {
     b.popularity = votesToPopularity(movie.imdbVotes);
     b.plot = movie.plot;
     b.color = colorRed;
-    b.mx = (Math.random() - 0.5) * 10;
-    b.my = (Math.random() - 0.5) * 10;
+    b.poster.src = movie.poster;
+    b.maturity = movie.rated;
+    var tomatoIndex = movie.ratings.findIndex(item => item.source === 'Rotten Tomatoes');
+    if (tomatoIndex != -1) {
+        b.tomato = (movie.ratings[tomatoIndex].value).replace(/\D+/g, '');
+    }
     b.pinToMap();
     bubbles.push(b);
 
     addLink(b);
+
+    cameraPan(b);
+
+    return b;
 }
 
 function addLink(bubble) {
@@ -643,33 +779,83 @@ function votesToPopularity(votesRaw) {
     return popularity;
 }
 
+function cameraPan(bubble) {
+    cameraDesiredMX = bubble.mx;
+    cameraDesiredMY = bubble.my;
+
+    cameraPanStep();
+}
+
+function cameraPanStep() {
+    var tolerance = 0.01;
+    var slowness = 6;
+
+    cameraMX -= (cameraMX - cameraDesiredMX) / slowness;
+    cameraMY -= (cameraMY - cameraDesiredMY) / slowness;
+
+    if (Math.abs(cameraMX - cameraDesiredMX) < tolerance &&
+        Math.abs(cameraMY - cameraDesiredMY) < tolerance) {
+        // We have arrived
+    }
+    else {
+        setTimeout(cameraPanStep, 15);
+        console.log("Step");
+    }
+    render();
+}
 
 
-var data = [20, 10, 330];
-var labels = ["120", "100", "140"];
-var colors = ["#FFDAB9", "#E6E6FA", "#E0FFFF"];
+//var data = [20, 10, 330];
+//var labels = ["120", "100", "140"];
+//var colors = ["#FFDAB9", "#E6E6FA", "#E0FFFF"];
 
-function drawSegment(canvas, context, i) {
+function drawPie(context, sizes, colors, labels, cx, cy, cSize) {
+
+    for (var i = 0; i < sizes.length; i++) {
+        context.save();
+        var centerX = cx;
+        var centerY = cy;
+        radius = cSize;
+
+        var startingAngle = degreesToRadians(sumTo(sizes, i) - 90);
+        var arcSize = degreesToRadians(sizes[i]);
+        var endingAngle = startingAngle + arcSize;
+
+        context.beginPath();
+        context.moveTo(centerX, centerY);
+        context.arc(centerX, centerY, radius,
+            startingAngle, endingAngle, false);
+        context.closePath();
+
+        context.fillStyle = colors[i];
+        context.fill();
+
+        context.restore();
+
+        if (labels != null) {
+            //drawSegmentLabel(context, sizes, labels, i);
+        }
+    }
+}
+
+function drawSegmentLabel(context, sizes, labels, i) {
     context.save();
-    var centerX = Math.floor(canvas.width / 2);
-    var centerY = Math.floor(canvas.height / 2);
-    radius = Math.floor(canvas.width / 8);
+    var x = Math.floor(canvas.width / 2);
+    var y = Math.floor(canvas.height / 2);
+    var angle = degreesToRadians(sumTo(sizes, i));
 
-    var startingAngle = degreesToRadians(sumTo(data, i));
-    var arcSize = degreesToRadians(data[i]);
-    var endingAngle = startingAngle + arcSize;
+    context.translate(x, y);
+    context.rotate(angle);
+    var dx = Math.floor(canvas.width * 0.5) - 10;
+    var dy = Math.floor(canvas.height * 0.05);
 
-    context.beginPath();
-    context.moveTo(centerX, centerY);
-    context.arc(centerX, centerY, radius,
-        startingAngle, endingAngle, false);
-    context.closePath();
+    context.textAlign = "right";
+    var fontSize = Math.floor(canvas.height / 25);
+    context.font = fontSize + "pt Helvetica";
 
-    context.fillStyle = colors[i];
-    context.fill();
+    context.fillText(labels[i], dx, dy);
 
     context.restore();
-    
 }
 
 function degreesToRadians(degrees) {
