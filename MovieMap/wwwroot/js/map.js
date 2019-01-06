@@ -10,9 +10,10 @@ function Bubble(title) {
     this.title = title;
     this.year = 0;
     this.tomato = -1;
+    this.opinion = -1;
     this.popularity = 0;
     this.plot = "";
-    this.color = colorBrown;
+    this.color = colorLead;
     this.maturity = null;
     this.poster = new Image();
     this.ring = 0;
@@ -81,7 +82,6 @@ var sqrt3 = 0.0;
 var crowdingFactor = .65;
 var lineSpacing = 1.2;
 var fullPopularityVotes = 750000;
-var homeStuff = "Filtering Settings <\n" + "Maturity Settings <\n" + "Account Settings <\n";
 
 // Objects
 var bubbles = [];
@@ -93,6 +93,7 @@ var pinInfo = false;
 var opinionMode = false;
 var currentUnfilledRing = 0;
 var currentPositionInRing = 0;
+var canvasInfoWidthExact = 0;
 
 // Camera
 var cameraCX = 0; // the center of the canvas
@@ -110,6 +111,7 @@ var colorPurple = "#a366a3";
 var colorRed = "#a46666";
 
 var colorBrown = "#a39466";
+var colorYellow = "#9E9E50";
 var colorCharcoal = "#3f3f3f";
 var colorSmoke = "#d8d8d8";
 var colorGreyGlass = 'rgba(110, 110, 110, 0.8)';
@@ -137,7 +139,11 @@ window.onload = function () {
     document.addEventListener('mousemove', mouseMove);
     canvas.addEventListener('wheel', function (evt) {
         evt.preventDefault();
-        zoomCamera(evt.offsetX, evt.offsetY, evt.wheelDeltaY)
+        var wheelDelta = evt.wheelDeltaY;
+        if (wheelDelta == undefined) {
+            wheelDelta = evt.deltaY * -60;
+        }
+        zoomCamera(evt.offsetX, evt.offsetY, wheelDelta)
         return false;
     });
 
@@ -220,6 +226,7 @@ function setup() {
     home.year = -5;
     home.popularity = 100;
     home.tomato = 100;
+    home.color = colorLead;
     home.pinToMap();
     bubbles.push(home);
 
@@ -243,6 +250,14 @@ function setup() {
     sample2.pinToMap();
     bubbles.push(sample2);
 
+    var sample3 = new Bubble('Tarzan');
+    sample3.year = 2016;
+    sample3.popularity = 80;
+    sample3.plot = "Plot of the movie. This could go on and on, but honestly why bother?";
+    sample3.color = colorYellow;
+    sample3.tomato = 93;
+    sample3.pinToMap();
+    bubbles.push(sample3);
 
     // Sample links
     var link1 = new Link(home, sample1);
@@ -252,6 +267,10 @@ function setup() {
     var link2 = new Link(home, sample2);
     link2.strength = 0.04;
     links.push(link2);
+
+    var link3 = new Link(home, sample3);
+    link3.strength = 0.04;
+    links.push(link3);
 }
 
 function render() {
@@ -302,10 +321,10 @@ function render() {
 
         if (b === currentBubble && opinionMode) {
 
-            // The circle with Pieness
+            // The opinion selector
             var sizes = [90, 90, 90, 90];
             var colors = [colorRed, colorPurple, colorBlue, colorGreen];
-            var labels = null;
+            var labels = ["Terrible", "Alright", "Great", "Favorite"];
             drawPie(ctx, sizes, colors, labels, b.cx(), b.cy(), b.cSize());
         }
         else if (b === currentBubble) {
@@ -352,6 +371,9 @@ function render() {
                 if (b.maturity != null && b.maturity != "") {
                     ctx.fillText(b.maturity, b.cx(), b.cy() + b.cSize() * 0.8);
                 }
+                if (pinInfo == true) {
+                    ctx.fillText("Click to rate", b.cx(), b.cy() + b.cSize() * 0.08);
+                }
             }
             
         }
@@ -359,6 +381,9 @@ function render() {
             // The circle with Pie shape
             var sizes;
             if (b.tomato == -1 || b.tomato == NaN || b.tomato == "" || b.tomato == null) {
+                sizes = [360, 0];
+            }
+            else if (b.opinion != -1) {
                 sizes = [360, 0];
             }
             else {
@@ -380,19 +405,35 @@ function render() {
                 wrapText(ctx, b.fullTitle(), b.cx(), b.cy(), b.cSize() * 1.8, fontSize * lineSpacing);
             }
         }
-
-        
         
     });
     
     renderInfo();
 }
 
+function infoOpen() {
+    var tolerance = 1;
+    var slowness = 3;
+
+    canvasInfoWidthExact += (240 - canvasInfoWidthExact) / slowness;
+    canvasInfo.width = canvasInfoWidthExact;
+
+    if (Math.abs(240 - canvasInfoWidthExact) <= tolerance) {
+        // We have arrived
+        canvasInfo.width = 240;
+        canvasInfoWidthExact = 240;
+        render();
+    }
+    else {
+        setTimeout(render, 15);
+    }
+}
+
 function renderInfo() {
     //ctxInfo.clearRect(canvasInfo.offsetLeft, 0, canvasInfo.width, canvasInfo.height);
     
     if (currentBubble !== null) {
-        canvasInfo.width = 240;
+        //canvasInfo.width = 240;
 
         // Render background
         ctx.beginPath();
@@ -428,9 +469,14 @@ function renderInfo() {
             fontSize = 12;
             ctxInfo.font = fontSize + "px Calibri";
             ctxInfo.textAlign = "left";
-            wrapText(ctxInfo, homeStuff, marginLineX, 160, canvasInfo.width * 0.9, fontSize * lineSpacing);
+            ctxInfo.fillText("Filtering Settings", marginLineX, 160);
+            ctxInfo.fillText("Maturity Settings", marginLineX, 180);
+            ctxInfo.fillText("Account Settings", marginLineX, 200);
+            
         }
         else {
+            // This is NOT the home bubble
+
             var heightUsed = 20;
             var margins = 20;
             // Render Poster
@@ -454,12 +500,18 @@ function renderInfo() {
             lines = wrapText(ctxInfo, b.plot, marginLineX, heightUsed + fontSize, canvasInfo.width * 0.9, fontSize * lineSpacing);
             heightUsed += (lines * fontSize * lineSpacing) + margins;
         }
+
+        if (canvasInfo.width != 240) {
+            infoOpen();
+        }
         
     }
     else {
+        canvasInfoWidthExact = 0;
         canvasInfo.width = 0;
     }
 
+    console.log("Render");
 }
 
 
@@ -583,6 +635,7 @@ function mouseUp(evt) {
     var xLoc = evt.offsetX;
     var yLoc = evt.offsetY;
     var found = false;
+    var shouldPin = true;
 
     // Using a for loop so I can exit.
     for (var i = 0; i < bubbles.length && !found; i++) {
@@ -593,13 +646,36 @@ function mouseUp(evt) {
         
         if (Math.hypot(bubbleCX - xLoc, bubbleCY - yLoc) < bubbleCSize) {
 
-            if (pinInfo == true) {
+            if (opinionMode == true) {
+                if (xLoc >= bubbleCX && yLoc < bubbleCY) {
+                    b.color = colorRed;
+                    b.opinion = 25;
+                }
+                else if (xLoc >= bubbleCX && yLoc >= bubbleCY) {
+                    b.color = colorPurple;
+                    b.opinion = 50;
+                }
+                else if (xLoc < bubbleCX && yLoc >= bubbleCY) {
+                    b.color = colorBlue;
+                    b.opinion = 75;
+                }
+                else if (xLoc < bubbleCX && yLoc < bubbleCY) {
+                    b.color = colorGreen;
+                    b.opinion = 100;
+                }
+                opinionMode = false;
+                pinInfo = false;
+                shouldPin = false;
+            }
+            else if (pinInfo == true) {
                 opinionMode = true;
             }
             // Make the info panel open or close, etc.
             currentBubble = b;
             found = true;
-            pinInfo = true;
+            if (shouldPin) {
+                pinInfo = true;
+            }
             
         }
     }
@@ -645,6 +721,7 @@ function mouseMove(evt) {
 
     if (currentBubble !== originalCurrentBubble) {
         render();
+        console.log("Render from mouseMove");
     }
 
     
@@ -656,7 +733,7 @@ function rightMouseUp(evt) {
 }
 
 function keyPress(evt) {
-    console.log(event.keyCode);
+    console.log(evt.keyCode);
     switch (evt.keyCode) {
         case 40:
             getMovieDetails(bubbles[1].title, bubbles[1].year); // debug
@@ -667,7 +744,7 @@ function keyPress(evt) {
     }
 }
 function keyPressTitle(evt) {
-    console.log(event.keyCode);
+    console.log(evt.keyCode);
     switch (evt.keyCode) {
         case 13:
             submitSearch();
@@ -675,7 +752,7 @@ function keyPressTitle(evt) {
     }
 }
 function keyPressYear(evt) {
-    console.log(event.keyCode);
+    console.log(evt.keyCode);
     switch (evt.keyCode) {
         case 13:
             submitSearch();
@@ -723,7 +800,7 @@ function addBubble(movie) {
     b.year = movie.year;
     b.popularity = votesToPopularity(movie.imdbVotes);
     b.plot = movie.plot;
-    b.color = colorRed;
+    b.color = colorYellow;
     b.poster.src = movie.poster;
     b.maturity = movie.rated;
     var tomatoIndex = movie.ratings.findIndex(item => item.source === 'Rotten Tomatoes');
@@ -832,12 +909,28 @@ function drawPie(context, sizes, colors, labels, cx, cy, cSize) {
 
         context.restore();
 
-        if (labels != null) {
-            //drawSegmentLabel(context, sizes, labels, i);
-        }
+        
+    }
+    if (labels != null) {
+        drawLabels(labels, cx, cy, cSize);
+        //drawSegmentLabel(context, sizes, labels, i);
     }
 }
 
+function drawLabels(labels, cx, cy, cSize) {
+    var distanceX = cSize / 2.2;
+    var distanceY = cSize / 4;
+    var fontSize = cSize / 7;
+    ctx.font = fontSize + "pt Calibri";
+
+    ctx.fillText(labels[0], cx + distanceX, cy - distanceY);
+    ctx.fillText(labels[1], cx + distanceX, cy + distanceY + fontSize);
+    ctx.fillText(labels[2], cx - distanceX, cy + distanceY + fontSize);
+    ctx.fillText(labels[3], cx - distanceX, cy - distanceY);
+    
+}
+
+//unused
 function drawSegmentLabel(context, sizes, labels, i) {
     context.save();
     var x = Math.floor(canvas.width / 2);
