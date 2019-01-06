@@ -132,7 +132,9 @@ window.onload = function () {
 
     inputTitle = document.getElementById("inputTitle");
     inputYear = document.getElementById("inputYear");
-    document.getElementById("inputYear").style.width = "500px";
+
+    window.addEventListener('resize', resizeCanvas, false);
+    resizeCanvas();
 
     canvas.addEventListener("keydown", keyPress);
     document.addEventListener('click', mouseUp);
@@ -178,10 +180,18 @@ window.onload = function () {
     }
     */
     setup();
-    setupSearch();
+    
 
     render();
     
+}
+
+function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    canvasInfo.height = window.innerHeight;
+    setupSearch();
+    render();
 }
 
 function setupSearch() {
@@ -342,7 +352,7 @@ function render() {
                 ctx.arc(b.cx(), b.cy(), b.cSize(), 0, 2 * Math.PI, false);
                 ctx.clip();
                 var ratio = b.poster.naturalHeight / b.poster.naturalWidth;
-                ctx.drawImage(b.poster, b.cx() - b.cSize(), b.cy() - b.cSize() * 0.8 * ratio, b.cSize() * 2, b.cSize() * 2 * ratio);
+                ctx.drawImage(b.poster, b.cx() - b.cSize(), b.cy() - b.cSize() * 0.775 * ratio, b.cSize() * 2, b.cSize() * 2 * ratio);
                 ctx.fillStyle = colorBlackGlass;
                 ctx.arc(b.cx(), b.cy(), b.cSize() * 1.1, 0, 2 * Math.PI, false); // Imprecise size, for tinting.
                 ctx.fill();
@@ -971,6 +981,12 @@ function renderLogo() {
     ctx.textAlign = "center";
     ctx.font = "30px Cooper Black";
     ctx.fillText("Map", 137, 30);
+
+    // Render copyright
+    var fontSize = 10;
+    ctx.font = fontSize + "pt Calibri";
+    ctx.fillStyle = colorSilver;
+    ctx.fillText("Copyright 2019, ZEEP Studios", canvas.width / 2, canvas.height - 10);
 }
 
 function claimNextRingPosition() {
