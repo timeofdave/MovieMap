@@ -73,15 +73,17 @@ function Link(bubble1, bubble2) {
     }
 }
 
+var canvas;
+var canvasInfo;
 var inputTitle;
 var inputYear;
 
-
 // Constants
-var sqrt3 = 0.0;
+var sqrt3 = sqrt3 = Math.sqrt(3);
 var crowdingFactor = .65;
 var lineSpacing = 1.2;
 var fullPopularityVotes = 750000;
+var infoPanelWidth = 240;
 
 // Objects
 var bubbles = [];
@@ -94,6 +96,9 @@ var opinionMode = false;
 var currentUnfilledRing = 0;
 var currentPositionInRing = 0;
 var canvasInfoWidthExact = 0;
+
+// Debug
+var renderCount = 1;
 
 // Camera
 var cameraCX = 0; // the center of the canvas
@@ -137,7 +142,8 @@ window.onload = function () {
     resizeCanvas();
 
     canvas.addEventListener("keydown", keyPress);
-    document.addEventListener('click', mouseUp);
+    document.addEventListener('mousedown', mouseDown);
+    document.addEventListener('mouseup', mouseUp);
     document.addEventListener('mousemove', mouseMove);
     canvas.addEventListener('wheel', function (evt) {
         evt.preventDefault();
@@ -151,34 +157,7 @@ window.onload = function () {
 
     inputTitle.addEventListener("keydown", keyPressTitle);
     inputYear.addEventListener("keydown", keyPressYear);
-    /*
-    canvas.on('click', function (e) {
-        e.preventDefault();
-
-        var mouse = {
-            x: e.pageX - canvasPosition.x,
-            y: e.pageY - canvasPosition.y
-        }
-
-        //do something with mouse position here
-
-        return false;
-    });
-
-    // do nothing in the event handler except canceling the event
-    canvas.ondragstart = function (e) {
-        if (e && e.preventDefault) { e.preventDefault(); }
-        if (e && e.stopPropagation) { e.stopPropagation(); }
-        return false;
-    }
-
-    // do nothing in the event handler except canceling the event
-    canvas.onselectstart = function (e) {
-        if (e && e.preventDefault) { e.preventDefault(); }
-        if (e && e.stopPropagation) { e.stopPropagation(); }
-        return false;
-    }
-    */
+    
     setup();
     
 
@@ -190,7 +169,11 @@ function resizeCanvas() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
     canvasInfo.height = window.innerHeight;
+
+    cameraCX = canvas.width / 2;
+    cameraCY = canvas.height / 2;
     setupSearch();
+
     render();
 }
 
@@ -205,7 +188,7 @@ function setupSearch() {
     inputTitle.style.height = fieldHeight + "px";
     inputTitle.style.left = (canvas.width - (titleWidth + yearWidth + fieldMargins)) / 2 + "px";
     inputTitle.style.top = fieldMargins + "px";
-    //(parseInt(document.getElementById("Left").width) + 240) + "px";
+    //(parseInt(document.getElementById("Left").width) + infoPanelWidth) + "px";
 
     inputYear.style.width = yearWidth + "px";
     inputYear.style.height = fieldHeight + "px";
@@ -225,11 +208,25 @@ function setupSearch() {
     inputYear.placeholder = "Year";
 }
 
-function setup() {
-    sqrt3 = Math.sqrt(3);
-    cameraCX = canvas.width / 2;
-    cameraCY = canvas.height / 2;
+// Debug
+function spamBubbles() {
+    // Sample Bubbles
+    for (var i = 0; i < 100; i++) {
+        var sample1 = new Bubble('Movie: the Movie');
+        sample1.year = 2000;
+        sample1.popularity = Math.random() * 50 + 50;
+        sample1.plot = "Plot of the movie. This could go on and on, but honestly why bother?";
+        sample1.color = colorYellow;
+        sample1.tomato = 85;
+        sample1.pinToMap();
+        bubbles.push(sample1);
 
+        addLink(sample1);
+    }
+    
+}
+
+function setup() {
 
     // Place home
     var home = new Bubble('Home');
@@ -346,7 +343,7 @@ function render() {
             //ctx.stroke();
 
             // The circle with image background
-            if (b.poster.src != null && b.poster.src != "") {
+            if (b.poster.src != null && b.poster.src != "" && b.poster.naturalWidth > 0) {
                 ctx.save();
                 ctx.beginPath();
                 ctx.arc(b.cx(), b.cy(), b.cSize(), 0, 2 * Math.PI, false);
@@ -388,7 +385,7 @@ function render() {
             
         }
         else {
-            // The circle with Pie shape
+            // THE DEFAULT LOOK: The circle with Pie shape
             var sizes;
             if (b.tomato == -1 || b.tomato == NaN || b.tomato == "" || b.tomato == null) {
                 sizes = [360, 0];
@@ -404,7 +401,10 @@ function render() {
             drawPie(ctx, sizes, colors, labels, b.cx(), b.cy(), b.cSize());
 
             // Title
-            var fontSize = b.cSize() / 5;
+            var fontSize = b.cSize() / 4;
+            if (b.fullTitle().length > 30) {
+                fontSize = b.cSize() / (b.fullTitle().length / 7.6);
+            }
             ctx.fillStyle = colorWhite;
             ctx.textAlign = "center";
             ctx.font = fontSize + "px Calibri";
@@ -425,13 +425,13 @@ function infoOpen() {
     var tolerance = 1;
     var slowness = 3;
 
-    canvasInfoWidthExact += (240 - canvasInfoWidthExact) / slowness;
+    canvasInfoWidthExact += (infoPanelWidth - canvasInfoWidthExact) / slowness;
     canvasInfo.width = canvasInfoWidthExact;
 
-    if (Math.abs(240 - canvasInfoWidthExact) <= tolerance) {
+    if (Math.abs(infoPanelWidth - canvasInfoWidthExact) <= tolerance) {
         // We have arrived
-        canvasInfo.width = 240;
-        canvasInfoWidthExact = 240;
+        canvasInfo.width = infoPanelWidth;
+        canvasInfoWidthExact = infoPanelWidth;
         render();
     }
     else {
@@ -443,7 +443,7 @@ function renderInfo() {
     //ctxInfo.clearRect(canvasInfo.offsetLeft, 0, canvasInfo.width, canvasInfo.height);
     
     if (currentBubble !== null) {
-        //canvasInfo.width = 240;
+        //canvasInfo.width = infoPanelWidth;
 
         // Render background
         ctx.beginPath();
@@ -511,7 +511,7 @@ function renderInfo() {
             heightUsed += (lines * fontSize * lineSpacing) + margins;
         }
 
-        if (canvasInfo.width != 240) {
+        if (canvasInfo.width != infoPanelWidth) {
             infoOpen();
         }
         
@@ -520,8 +520,11 @@ function renderInfo() {
         canvasInfoWidthExact = 0;
         canvasInfo.width = 0;
     }
-
-    console.log("Render");
+    renderCount++;
+    if (renderCount % 20 == 0) {
+        console.log("Render " + renderCount);
+    }
+    
 }
 
 
@@ -641,11 +644,43 @@ function onScroll(event) {
     console.log(event.keyCode);
 }
 
+var predragMouseCX = -1;
+var predragMouseCY = -1;
+function mouseDown(evt) {
+    var xLoc = evt.offsetX;
+    var yLoc = evt.offsetY;
+    var found = false;
+    
+    // Using a for loop so I can exit.
+    for (var i = 0; i < bubbles.length && !found; i++) {
+        var b = bubbles[i];
+        var bubbleCX = b.cx();
+        var bubbleCY = b.cy();
+        var bubbleCSize = b.cSize();
+
+        if (Math.hypot(bubbleCX - xLoc, bubbleCY - yLoc) < bubbleCSize) {
+            // TODO: We don't have bubble dragging yet.
+            found = true;
+        }
+    }
+
+    if (!found) {
+        // We are in open space... drag canvas!
+        predragMouseCX = xLoc;
+        predragMouseCY = yLoc;
+    }
+
+    render();
+}
+
 function mouseUp(evt) {
     var xLoc = evt.offsetX;
     var yLoc = evt.offsetY;
     var found = false;
     var shouldPin = true;
+
+    predragMouseCX = -1;
+    predragMouseCY = -1;
 
     // Using a for loop so I can exit.
     for (var i = 0; i < bubbles.length && !found; i++) {
@@ -705,35 +740,41 @@ function mouseMove(evt) {
     var found = false;
     var originalCurrentBubble = currentBubble;
 
-    // Using a for loop so I can exit.
-    for (var i = 0; i < bubbles.length && !found; i++) {
-        var b = bubbles[i];
-        var bubbleCX = b.cx();
-        var bubbleCY = b.cy();
-        var bubbleCSize = b.cSize();
-        
-        // Make the info panel open or close, etc.
-        if (Math.hypot(bubbleCX - xLoc, bubbleCY - yLoc) < bubbleCSize) {
-            found = true;
+    if (predragMouseCX == -1) {
+        // Using a for loop so I can exit.
+        for (var i = 0; i < bubbles.length && !found; i++) {
+            var b = bubbles[i];
+            var bubbleCX = b.cx();
+            var bubbleCY = b.cy();
+            var bubbleCSize = b.cSize();
 
-            if (!pinInfo) {
-                currentBubble = b;
-            }
-            if (!opinionMode) {
-                
+            // Make the info panel open or close, etc.
+            if (Math.hypot(bubbleCX - xLoc, bubbleCY - yLoc) < bubbleCSize) {
+                found = true;
+
+                if (!pinInfo) {
+                    currentBubble = b;
+                }
+                if (!opinionMode) {
+
+                }
             }
         }
+        if (!found && !pinInfo && evt.target !== canvasInfo) {
+            currentBubble = null;
+        }
+        if (currentBubble !== originalCurrentBubble) {
+            render();
+        }
     }
-
-    if (!found && !pinInfo && evt.target !== canvasInfo) {
-        currentBubble = null;
-    }
-
-    if (currentBubble !== originalCurrentBubble) {
+    else {
+        // We are in the process of dragging
+        cameraMX += toMDistance(predragMouseCX - xLoc);
+        cameraMY += toMDistance(predragMouseCY - yLoc);
+        predragMouseCX = xLoc;
+        predragMouseCY = yLoc;
         render();
-        console.log("Render from mouseMove");
     }
-
     
 }
 
@@ -751,6 +792,8 @@ function keyPress(evt) {
         case 32:
             setupSearch(); // debug
             break;
+        case 49: // #1
+            spamBubbles();
     }
 }
 function keyPressTitle(evt) {
