@@ -3,9 +3,18 @@
 @{
     ViewData["Title"] = "Home page";
 }
+<script src="~/js/variables.js" asp-append-version="true"></script>
+<script src="~/js/bubble.js" asp-append-version="true"></script>
+<script src="~/js/link.js" asp-append-version="true"></script>
 <script src="~/js/map.js" asp-append-version="true"></script>
+<script src="~/js/camera.js" asp-append-version="true"></script>
+<script src="~/js/search.js" asp-append-version="true"></script>
+<script src="~/js/infoPanel.js" asp-append-version="true"></script>
+<script src="~/js/rendering.js" asp-append-version="true"></script>
+<script src="~/js/input.js" asp-append-version="true"></script>
+<script src="~/js/initialization.js" asp-append-version="true"></script>
 
-<canvas id="mapCanvas"  style="position: absolute; left: 0; top: 0; z-index: 0;"></canvas>
+<canvas id="mapCanvas" style="position: absolute; left: 0; top: 0; z-index: 0;"></canvas>
 <canvas id="infoCanvas" style="position: absolute; right: 0; top: 0; z-index: 1;"></canvas>
 <input id="inputTitle" width="240" height="100" type="text" style="z-index: 1; position: absolute;" />
 <input id="inputYear" width="240" height="100" type="text" style="z-index: 1; position: absolute;" />
