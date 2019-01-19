@@ -45,7 +45,7 @@ namespace MovieMap.Models
     public class ExternalSource
     {
         private const string URL = "http://www.omdbapi.com/";
-        private const string apiKey = "ab48854d";
+        private const string apiKey = "fakeKey";
 
         public static OmdbObject MakeRequest(string title, int year)
         {
@@ -84,45 +84,6 @@ namespace MovieMap.Models
             }
         }
 
-
-
-        /*
-        public static string MakeRequest2(string title, string year)
-        {
-            string result = "Empty";
-
-            HttpClient client = new HttpClient();
-            //client.BaseAddress = new Uri(URL);
-
-            // Add an Accept header for JSON format.
-            client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-
-            string urlParameters = "?t=" + title + "&y=" + year + "&apikey=ab48854d";
-
-            // List data response.
-            HttpResponseMessage response = client.GetAsync(URL + urlParameters).Result;  // Blocking call! Program will wait here until a response is received or a timeout occurs.
-            if (response.IsSuccessStatusCode)
-            {
-                // Parse the response body.
-                var dataObjects = response.Content.ReadAsAsync<IEnumerable<OmdbObject>>().Result;  //Make sure to add a reference to System.Net.Http.Formatting.dll
-                foreach (var d in dataObjects)
-                {
-                    Console.WriteLine("{0}", d.Title);
-                    result = d.Title;
-                }
-            }
-            else
-            {
-                Console.WriteLine("{0} ({1})", (int)response.StatusCode, response.ReasonPhrase);
-            }
-
-            //Make any other calls using HttpClient here.
-
-            //Dispose once all HttpClient calls are complete. This is not necessary if the containing object will be disposed of; for example in this case the HttpClient instance will be disposed automatically when the application terminates so the following call is superfluous.
-            client.Dispose();
-
-            return result;
-        }
-        */
+        
     }
 }
